@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IT Converts – Leads Form</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- html2canvas + jsPDF via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0d0d0d;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 60px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Ambient glow blobs */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -120px; left: -120px;
+      width: 480px; height: 480px;
+      background: radial-gradient(circle, rgba(255,220,0,0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -100px; right: -100px;
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, rgba(255,220,0,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Card ─── */
+    .form-card {
+      width: 100%;
+      max-width: 780px;
+      background: #111;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255,220,0,0.15),
+        0 30px 80px rgba(0,0,0,0.6),
+        0 0 60px rgba(255,220,0,0.06);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ─── Header ─── */
+    .form-header {
+      background: #111;
+      padding: 44px 48px 36px;
+      border-bottom: 3px solid #FFD700;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Decorative circles */
+    .deco { position: absolute; border-radius: 50%; }
+    .deco-1 { width: 90px; height: 90px; background: #FFD700; top: -28px; left: -28px; opacity: 0.9; }
+    .deco-2 { width: 50px; height: 50px; background: #FFD700; top: 30px; left: 46px; opacity: 0.7; }
+    .deco-3 { width: 24px; height: 24px; background: #FFD700; top: 14px; left: 94px; opacity: 0.5; }
+    .deco-4 { width: 120px; height: 120px; border: 16px solid #FFD700; top: -40px; right: -30px; opacity: 0.2; }
+    .deco-5 { width: 70px; height: 70px; border: 10px solid #FFD700; top: 30px; right: 60px; opacity: 0.15; }
+
+    .header-content { position: relative; z-index: 2; text-align: center; }
+
+    .brand-label {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 10px;
+      color: #FFD700;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .form-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 42px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+    .form-title span { color: #FFD700; }
+
+    .form-subtitle {
+      font-size: 15px;
+      color: rgba(255,255,255,0.65);
+      font-style: italic;
+      font-weight: 400;
+    }
+    .form-subtitle strong { color: #FFD700; font-style: normal; font-weight: 700; }
+
+    /* ─── Body ─── */
+    .form-body { padding: 40px 48px; }
+
+    /* Section label */
+    .section-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #FFD700;
+      margin-bottom: 24px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,220,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 5px; height: 20px;
+      background: #FFD700;
+      border-radius: 3px;
+    }
+
+    /* Grid */
+    .field-grid {
+      display: grid;
+      gap: 20px 24px;
+    }
+    .col-2 { grid-template-columns: 1fr 1fr; }
+    .col-1 { grid-template-columns: 1fr; }
+
+    /* Field */
+    .field { display: flex; flex-direction: column; gap: 7px; }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: rgba(255,255,255,0.55);
+      text-transform: uppercase;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="time"] {
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid rgba(255,220,0,0.2);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 13px 16px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+    input:focus {
+      border-color: #FFD700;
+      background: rgba(255,220,0,0.06);
+      box-shadow: 0 0 0 3px rgba(255,220,0,0.12);
+    }
+    input::placeholder { color: rgba(255,255,255,0.22); }
+    input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1) sepia(1) saturate(5) hue-rotate(10deg); }
+
+    /* Divider */
+    .divider { height: 1px; background: rgba(255,255,255,0.07); margin: 36px 0; }
+
+    /* Day toggles */
+    .day-toggles { display: flex; gap: 12px; }
+
+    .day-toggle input { display: none; }
+    .day-toggle label {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid rgba(255,220,0,0.2);
+      border-radius: 10px;
+      padding: 11px 22px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.5px;
+      text-transform: none;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .day-toggle label::before {
+      content: '';
+      width: 16px; height: 16px;
+      border-radius: 4px;
+      border: 2px solid rgba(255,220,0,0.35);
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .day-toggle input:checked + label {
+      background: rgba(255,220,0,0.12);
+      border-color: #FFD700;
+      color: #FFD700;
+    }
+    .day-toggle input:checked + label::before {
+      background: #FFD700;
+      border-color: #FFD700;
+      box-shadow: inset 0 0 0 2px #111;
+    }
+
+    /* Time row */
+    .time-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: end;
+      gap: 16px;
+    }
+    .time-sep {
+      font-size: 12px; font-weight: 700;
+      color: rgba(255,220,0,0.5);
+      letter-spacing: 2px;
+      padding-bottom: 14px;
+      text-align: center;
+    }
+
+    /* ─── Signature ─── */
+    .sig-section { margin-top: 36px; }
+
+    .sig-box {
+      border: 2px dashed rgba(255,220,0,0.3);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      overflow: hidden;
+      position: relative;
+    }
+    .sig-box canvas {
+      display: block;
+      width: 100%;
+      height: 160px;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .sig-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      gap: 8px;
+      transition: opacity 0.3s;
+    }
+    .sig-placeholder.hidden { opacity: 0; }
+    .sig-placeholder svg { opacity: 0.25; }
+    .sig-placeholder span {
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      font-style: italic;
+    }
+
+    .sig-controls {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+    .btn-clear {
+      background: transparent;
+      border: 1px solid rgba(255,220,0,0.25);
+      color: rgba(255,220,0,0.7);
+      border-radius: 8px;
+      padding: 7px 18px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+    .btn-clear:hover {
+      background: rgba(255,220,0,0.08);
+      border-color: #FFD700;
+      color: #FFD700;
+    }
+
+    /* Date auto */
+    .date-display {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,220,0,0.18);
+      border-radius: 10px;
+      padding: 13px 16px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ─── Terms ─── */
+    .terms-box {
+      margin-top: 32px;
+      background: rgba(255,220,0,0.04);
+      border: 1px solid rgba(255,220,0,0.18);
+      border-radius: 14px;
+      padding: 22px 24px;
+      position: relative;
+    }
+    .terms-box::before {
+      content: '"';
+      position: absolute;
+      top: 10px; left: 18px;
+      font-size: 60px;
+      color: rgba(255,220,0,0.08);
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .terms-box p {
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.75;
+      font-style: italic;
+      position: relative;
+      z-index: 1;
+    }
+    .terms-box p strong { color: rgba(255,220,0,0.8); font-style: normal; }
+
+    /* ─── Actions ─── */
+    .form-actions {
+      display: flex;
+      gap: 14px;
+      margin-top: 36px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 180px;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.25s;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      color: #111;
+      box-shadow: 0 6px 24px rgba(255,200,0,0.3), 0 0 0 0 rgba(255,200,0,0.4);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 32px rgba(255,200,0,0.45), 0 0 0 4px rgba(255,200,0,0.12);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.7);
+      border: 1.5px solid rgba(255,255,255,0.12);
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.25);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    /* ─── Footer ─── */
+    .form-footer {
+      background: #0a0a0a;
+      padding: 22px 48px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(255,220,0,0.12);
+    }
+    .footer-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      font-weight: 500;
+    }
+    .footer-item svg { flex-shrink: 0; }
+    .footer-item span { color: rgba(255,220,0,0.7); }
+
+    /* ─── Toast ─── */
+    .toast {
+      position: fixed;
+      bottom: 30px; right: 30px;
+      background: #1a1a1a;
+      border: 1px solid rgba(255,220,0,0.35);
+      border-radius: 12px;
+      padding: 14px 22px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 9999;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(.34,1.56,.64,1);
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { border-color: rgba(0,200,100,0.4); }
+    .toast.success .toast-icon { color: #00c864; }
+    .toast.error { border-color: rgba(255,80,80,0.4); }
+    .toast.error .toast-icon { color: #ff5050; }
+
+    /* ─── Loading overlay ─── */
+    .loading-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 18px;
+      z-index: 9998;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+      width: 50px; height: 50px;
+      border: 4px solid rgba(255,220,0,0.2);
+      border-top-color: #FFD700;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-size: 14px; font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 1px;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 600px) {
+      .form-header, .form-body, .form-footer { padding-left: 24px; padding-right: 24px; }
+      .form-title { font-size: 30px; }
+      .col-2 { grid-template-columns: 1fr; }
+      .time-row { grid-template-columns: 1fr 1fr; }
+      .time-row .field:last-child { grid-column: 1/-1; }
+      .time-sep { display: none; }
+    }
+
+    /* Print / PDF area */
+    #pdf-capture { /* nothing special – we capture the card */ }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Generating PDF…</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<!-- ════ CARD ════ -->
+<div class="form-card" id="pdf-capture">
+
+  <!-- Header -->
+  <div class="form-header">
+    <div class="deco deco-1"></div>
+    <div class="deco deco-2"></div>
+    <div class="deco deco-3"></div>
+    <div class="deco deco-4"></div>
+    <div class="deco deco-5"></div>
+    <div class="header-content">
+      <span class="brand-label">I T &nbsp; C O N V E R T S</span>
+      <h1 class="form-title"><span>Leads</span> Form</h1>
+      <p class="form-subtitle"><strong>Please</strong> fill the form below so we can best serve you</p>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="form-body">
+
+    <!-- Personal Information -->
+    <div class="section-title">Personal Information</div>
+    <div class="field-grid col-2">
+      <div class="field" style="grid-column:1/-1">
+        <label>Full Name</label>
+        <input type="text" id="fullName" placeholder="Enter your full name" />
+      </div>
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="email" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label>Phone Number</label>
+        <input type="tel" id="phone" placeholder="+1 (555) 000-0000" />
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Address</label>
+        <input type="text" id="address" placeholder="Street address" />
+      </div>
+      <div class="field">
+        <label>City</label>
+        <input type="text" id="city" placeholder="City" />
+      </div>
+      <div class="field">
+        <label>ZIP / Postal Code</label>
+        <input type="text" id="zip" placeholder="00000" />
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>State / Province</label>
+        <input type="text" id="state" placeholder="State or Province" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Leads Preference -->
+    <div class="section-title">Leads Preference</div>
+    <div class="field-grid col-1" style="gap:22px">
+
+      <!-- Time -->
+      <div class="time-row">
+        <div class="field">
+          <label>Start Time</label>
+          <input type="time" id="startTime" />
+        </div>
+        <div class="time-sep">TO</div>
+        <div class="field">
+          <label>End Time</label>
+          <input type="time" id="endTime" />
+        </div>
+      </div>
+
+      <!-- Days -->
+      <div class="field">
+        <label>Preferred Days</label>
+        <div class="day-toggles">
+          <div class="day-toggle">
+            <input type="checkbox" id="saturday" />
+            <label for="saturday">Saturday</label>
+          </div>
+          <div class="day-toggle">
+            <input type="checkbox" id="sunday" />
+            <label for="sunday">Sunday</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phone for calls -->
+      <div class="field">
+        <label>Phone Number to Receive Calls</label>
+        <input type="tel" id="callPhone" placeholder="+1 (555) 000-0000" />
+      </div>
+
+      <!-- States covered -->
+      <div class="field">
+        <label>States Covered</label>
+        <input type="text" id="statesCovered" placeholder="e.g. California, Texas, New York…" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Terms -->
+    <div class="terms-box">
+      <p>By submitting this form, I confirm that I have read, understood, and agree to the payment terms stated above. I acknowledge that the agreed rate is <strong>$100 per approved sale</strong>, with payments made once every <strong>30 days</strong> after verification. I also understand and agree that <strong>It Converts LLC</strong> is not responsible for any chargebacks, or cancellations, that may occur after the transfer of a valid lead or sale. Any such issues are solely the responsibility of the buyer.</p>
+    </div>
+
+    <!-- Signature -->
+    <div class="sig-section">
+      <div class="section-title" style="margin-top:32px">Client Signature</div>
+
+      <div class="sig-box" id="sigBox">
+        <canvas id="sigCanvas"></canvas>
+        <div class="sig-placeholder" id="sigPlaceholder">
+          <!-- pen icon -->
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          <span>Draw your signature here</span>
+        </div>
+      </div>
+
+      <div class="sig-controls">
+        <button class="btn-clear" onclick="clearSignature()">Clear Signature</button>
+      </div>
+
+      <div class="field" style="margin-top:18px">
+        <label>Date</label>
+        <div class="date-display" id="dateDisplay"></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="downloadPDF()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download PDF
+      </button>
+      <button class="btn btn-secondary" onclick="resetForm()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.86"/></svg>
+        Reset Form
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="form-footer">
+    <div class="footer-item">
+      <!-- whatsapp icon -->
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFD700"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/><path d="M12.05 2C6.495 2 2.05 6.445 2.05 12c0 1.96.536 3.793 1.463 5.364L2 22l4.753-1.49A9.929 9.929 0 0 0 12.05 22C17.605 22 22.05 17.555 22.05 12S17.605 2 12.05 2zm0 18c-1.79 0-3.47-.49-4.913-1.337l-.35-.208-3.645 1.143 1.1-3.544-.228-.365A7.967 7.967 0 0 1 4.05 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>
+      <span>+923474569348</span>
+    </div>
+    <div class="footer-item">
+      <!-- teams icon -->
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFD700"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
+      <span>live:8b0cab9cf8034c00</span>
+    </div>
+    <div class="footer-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <span>arbabsyed35@gmail.com</span>
+    </div>
+    <div class="footer-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span>itconvertsglobal.com</span>
+    </div>
+  </div>
+
+</div><!-- /form-card -->
+
+<script>
+  // ─── Date display ───────────────────────────────────────────────
+  const dateEl = document.getElementById('dateDisplay');
+  const today  = new Date();
+  dateEl.textContent = today.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // ─── Signature canvas ────────────────────────────────────────────
+  const canvas      = document.getElementById('sigCanvas');
+  const ctx         = canvas.getContext('2d');
+  const placeholder = document.getElementById('sigPlaceholder');
+  let painting = false;
+  let hasSig   = false;
+
+  function resizeCanvas() {
+    const ratio = window.devicePixelRatio || 1;
+    const rect  = canvas.parentElement.getBoundingClientRect();
+    canvas.width  = rect.width  * ratio;
+    canvas.height = 160         * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth   = 2.2;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', () => { resizeCanvas(); });
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const src  = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    painting = true;
+    const { x, y } = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    if (!hasSig) { hasSig = true; placeholder.classList.add('hidden'); }
+  }
+  function draw(e) {
+    if (!painting) return;
+    e.preventDefault();
+    const { x, y } = getPos(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+  function stopDraw(e) { painting = false; ctx.beginPath(); }
+
+  canvas.addEventListener('mousedown',  startDraw);
+  canvas.addEventListener('mousemove',  draw);
+  canvas.addEventListener('mouseup',    stopDraw);
+  canvas.addEventListener('mouseleave', stopDraw);
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove',  draw,      { passive: false });
+  canvas.addEventListener('touchend',   stopDraw);
+
+  function clearSignature() {
+    const ratio = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, canvas.width / ratio, canvas.height / ratio);
+    hasSig = false;
+    placeholder.classList.remove('hidden');
+  }
+
+  // ─── Toast ───────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    const icon  = document.getElementById('toastIcon');
+    document.getElementById('toastMsg').textContent = msg;
+    toast.className = 'toast ' + type;
+    icon.textContent = type === 'success' ? '✓' : '✗';
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+
+  // ─── Validation ──────────────────────────────────────────────────
+  function validate() {
+    const required = ['fullName','email','phone','address','city','zip','state','callPhone','statesCovered'];
+    for (const id of required) {
+      const el = document.getElementById(id);
+      if (!el.value.trim()) {
+        el.focus();
+        el.style.borderColor = '#ff5050';
+        setTimeout(() => el.style.borderColor = '', 2000);
+        showToast('Please fill in all required fields.', 'error');
+        return false;
+      }
+    }
+    if (!hasSig) {
+      showToast('Please add your signature before downloading.', 'error');
+      document.getElementById('sigBox').style.borderColor = '#ff5050';
+      setTimeout(() => document.getElementById('sigBox').style.borderColor = '', 2000);
+      return false;
+    }
+    return true;
+  }
+
+  // ─── Download PDF ─────────────────────────────────────────────────
+  async function downloadPDF() {
+    if (!validate()) return;
+
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.classList.add('active');
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const card = document.getElementById('pdf-capture');
+
+      const canvas2 = await html2canvas(card, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#111',
+        logging: false,
+        windowWidth: card.scrollWidth,
+        windowHeight: card.scrollHeight,
+      });
+
+      const imgData = canvas2.toDataURL('image/png');
+      const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      const pageW  = pdf.internal.pageSize.getWidth();
+      const pageH  = pdf.internal.pageSize.getHeight();
+      const imgW   = canvas2.width;
+      const imgH   = canvas2.height;
+      const ratio  = Math.min(pageW / imgW, pageH / imgH) * (imgW / (pageW));
+      const finalW = pageW;
+      const finalH = (imgH / imgW) * pageW;
+
+      let yOffset = 0;
+      const pageImgH = pageH;
+
+      if (finalH <= pageH) {
+        pdf.addImage(imgData, 'PNG', 0, 0, finalW, finalH);
+      } else {
+        // Multi-page
+        let position = 0;
+        while (position < finalH) {
+          if (position > 0) pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, -position, finalW, finalH);
+          position += pageH;
+        }
+      }
+
+      const name = document.getElementById('fullName').value.trim().replace(/\s+/g, '_') || 'leads_form';
+      pdf.save(`IT_Converts_${name}.pdf`);
+      showToast('PDF downloaded successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Something went wrong. Please try again.', 'error');
+    } finally {
+      overlay.classList.remove('active');
+    }
+  }
+
+  // ─── Reset ────────────────────────────────────────────────────────
+  function resetForm() {
+    const ids = ['fullName','email','phone','address','city','zip','state','startTime','endTime','callPhone','statesCovered'];
+    ids.forEach(id => document.getElementById(id).value = '');
+    document.getElementById('saturday').checked = false;
+    document.getElementById('sunday').checked   = false;
+    clearSignature();
+    showToast('Form has been reset.', 'success');
+  }
+</script>
+</body>
+</html>
